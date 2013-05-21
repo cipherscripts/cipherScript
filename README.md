@@ -18,6 +18,7 @@ This library includes the following tools:
 
 * [SJCL](https://github.com/bitwiseshiftleft/sjcl)
 * [CryptoJS](http://code.google.com/p/crypto-js/)
+* [ClosureCompiler](https://developers.google.com/closure/compiler/) - more or less, for compiling
 
 Please Note
 ============
