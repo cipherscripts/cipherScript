@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+	</head>
+	<body>
+		<div id="test">
+			<p id="entropy"></p>
+			<p id="placeholder"></p>
+			<button onclick="starttest()">Start</button>
+		</div>
+		<script type="text/javascript" src="./script/cipherscript.min.js"></script>
+		<script type="text/javascript">
+			if(typeof console.log !== "function"){
+				alert("Sorry, this example requires Firebug!");
+			}
+			var kp1 = null; var kp2 = null; var kp3 = null;
+			cipherScript.init("entropy", "entropy collected");
+			function starttest(){
+				console.log("GENERATING KEYS:");
+				console.log(" ");
+				kp1 = cipherScript.generateKeypair(192, cipherScript.improvePassword("mysimpletestpassword"));
+				kp2 = cipherScript.generateKeypair(192, cipherScript.improvePassword("myothertestpassword"));
+				kp3 = cipherScript.generateKeypair(192, cipherScript.improvePassword("onemoretestpassword"));
+				console.log("KEYPAIR 1:");
+				console.log(kp1.pubkey); console.log(kp1.privkey);
+				console.log("KEYPAIR 2:");
+				console.log(kp2.pubkey); console.log(kp2.privkey);
+				console.log("KEYPAIR 3:");
+				console.log(kp3.pubkey); console.log(kp3.privkey);
+				setTimeout(function(){encrypt();}, 1000);
+			}
+			
+			function encrypt(){
+				console.log(" ");
+				console.log("MESSAGE ENCRYPTION");
+				console.log(" ");
+				var pubkeys = new Array(kp1.pubkey, kp2.pubkey, kp3.pubkey);
+				var msg = cipherScript.encryptMessage("this is just a test message", pubkeys);
+				if(msg!=null){
+					console.log(msg.message);
+					setTimeout(function(){decrypt(msg.message);}, 1000);
+				}
+				else{
+					console.log("Message could not be created!");
+				}
+			}
+			
+			function decrypt(message){
+				console.log(" ");
+				console.log("MESSAGE DECRYPTION");
+				console.log(" ");
+				if(message!=null){
+					var dec = cipherScript.decryptMessage(message, kp2.privkey, kp2.pubkey, cipherScript.improvePassword("myothertestpassword"));
+					if(dec!=null){
+						console.log(dec.cleartext);
+						setTimeout(function(){encryptAndSign();}, 1000);
+					}else{
+						console.log("Message could not be decrypted!");
+					}
+				}
+			}
+			
+			function encryptAndSign(){
+				console.log(" ");
+				console.log("MESSAGE ENCRYPTION AND SIGNING");
+				console.log(" ");
+				var pubkeys = new Array(kp1.pubkey, kp2.pubkey, kp3.pubkey);
+				var msg = cipherScript.encryptAndSignMessage("this is yet another test message", pubkeys, kp1.privkey, cipherScript.improvePassword("mysimpletestpassword"));
+				if(msg!=null){
+					console.log(msg.message);
+					setTimeout(function(){decryptAndVerify(msg.message);}, 1000);
+				}
+				else{
+					console.log("Message could not be created!");
+				}
+			}
+			
+			function decryptAndVerify(message){
+				console.log(" ");
+				console.log("MESSAGE DECRYPTION AND VERIFICATION");
+				console.log(" ");
+				if(message!=null){
+					var dec = cipherScript.decryptAndVerifyMessage(message, kp2.privkey, kp2.pubkey, cipherScript.improvePassword("myothertestpassword"), kp1.pubkey);
+					if(dec!=null){
+						console.log(dec.cleartext);
+						console.log(dec.verified);
+						setTimeout(function(){sign();}, 1000);
+					}else{
+						console.log("Message could not be decrypted!");
+					}
+				}
+			}
+			
+			function sign(){
+				console.log(" ");
+				console.log("MESSAGE SIGNING");
+				console.log(" ");
+				var signed = cipherScript.signMessage("this is a message to be signed", kp2.privkey, cipherScript.improvePassword("myothertestpassword"));
+				if(signed!=null){
+					console.log(signed.message);
+					setTimeout(function(){verify(signed.message);}, 1000);
+				}else{
+					console.log("Message could not be signed!");
+				}
+			}
+			
+			function verify(message){
+				console.log(" ");
+				console.log("MESSAGE VERIFICATION");
+				console.log(" ");
+				var check = cipherScript.verifyMessage(message, kp2.pubkey);
+				if(check!=null){
+					console.log(check.verified);
+				}
+				else{
+					console.log("Could not verify message (was it broken?)!");
+				}
+			}
+		</script>
+	</body>
+</html>

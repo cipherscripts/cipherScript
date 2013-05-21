@@ -1,0 +1,11 @@
+
+cipherScript utilizes SJCL (as found at 
+https://github.com/bitwiseshiftleft/sjcl/blob/ecc/sjcl.js) to provide
+all functions required for ECC, as well as some basic AES and encoding
+functions for compatibility when using ECC.
+
+SHA3, SHA512, AES (as used for string encryption with passwords), as 
+well as some encoding tools come from CRYPTOJS (as found at
+http://code.google.com/p/crypto-js/).
+
+

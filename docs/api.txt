@@ -1,0 +1,296 @@
+
+------------------------------------------------------------------------
+cipherscript.js API-Functions
+------------------------------------------------------------------------
+
+cipherScript generates an object called cipherScript with the 
+methods given below on load.
+		
+It requires it's initialisation method init being called first, to 
+start entropy collection.
+This initiates cryptographic functions present in the SJCL-library by 
+starting entropy collection from mouse events or browser random number 
+generators.
+
+cipherScript provides really easy access to symmetric and asymmetric
+encryption. For asymmetric crypto-functions, ECC (NISTECC) is used. This
+is a lot faster than RSA, but still the same as secure. 
+Choosing 521bit-keys in ECC is equal to choosing 15360bit-keys in RSA
+(and generating ECC-keys is extremely performant).
+Look here for a comparison of key sizes:
+http://publib.boulder.ibm.com/infocenter/zos/v1r12/index.jsp?topic=%2Fcom.ibm.zos.r12.icha700%2Fkeysizec.htm
+
+cipherScript already uses a block-based format for asymmetric encryption
+and signing. So you generate a keypair and get two keyblocks 
+(private and public) out. A message also comes as a messageblock string. 
+To find out more about the block format, read scheme.txt. This should
+easily explain the xml-based simple format.
+To use cipherScript, check out the API below.
+
+But cipherScript doesn't enforce the usage of it's block format. You can
+as well use the methods of cipherScript.ecc which do not output blocks
+but let you directly access the contents.
+(So use cipherScript.ecc, don't fiddle with extracting content from 
+blocks if you do not want to use them!)
+
+Symmetric encryption, which uses AES256, outputs strings and is found
+in cipherScript, it does not output any kind of blocks.
+
+The additional functions of cipherScript (hash, improvePassword, 
+randomKeyString, encoding-functions) also output simple strings (no
+formatted blocks).
+
+NOTE:
+
+cipherScript maps touch events on mobile to mouse events. It also 
+adds some functions to String.prototype: startsWith, trim, between.
+Checkout mobile.js (../src/crypto/sjcl/mobile.js) and tools.js 
+(../src/tools/tools.js) for more on these functions.
+
+------------------------------------------------------------------------
+cipherScript SIMPLE ENCRYPTION SCHEME
+------------------------------------------------------------------------
+
+INITIALISATION
+
+init (entropyElementId, entropySufficientInnerHtml)
+
+
+  Initiate encryption library by starting entropy collection from mouse
+  events.
+  <br>
+  @param entropyElementId           String Id of the element which 
+                                    should display  the status of 
+  									 entropy collection.
+  @param entropySufficientInnerHtml String What to display when
+  											entropy collection is done.
+  
+
+KEY GENERATION
+
+generateKeypair(bits, password)
+
+  Generates a key pair with a given number of bits and
+  encrypts the private key using a password.
+  <br>
+  @param   bits      Integer       Number of bits (384 or 521)
+  @param   password  String        Encryption password
+  @return  object                  Attributes: 
+  										String pubkey
+  										String privkey
+
+PLAIN ENCRYPTION
+
+encryptMessage(cleartext, pubkeys)
+
+  Encrypts a given cleartext using an array of public keys, so 
+  multiple recipients are possible.
+  <br>
+  @param    cleartext   String          Cleartext to encrypt
+  @param    pubkeys     Array<String>   Array of public key blocks
+  @return   object                      Attributes: 
+  											String message
+
+decryptMessage(message, privkey, pubkey, pass)
+
+  Decrypt a message with the receiver's private key and public key.
+  <br>
+  @param   message    String   Message block
+  @param   privkey    String   Receiver's private key block
+  @param   pubkey     String   Receiver's public key block
+  @param   pass       String   Receiver's password
+  @return  object              Attributes: 
+  									String cleartext
+  
+PLAIN SIGNING
+
+signMessage(texttosign, privkey, pass)
+
+  Sign an unencrypted text using the sender's private key.
+  <br>
+  @param   texttosign  String  The text to be signed
+  @param   privkey     String  Sender's key block
+  @param   pass        String  Sender's password
+  @return  object              Attributes:
+  									String message
+  
+verifyMessage(message, pubkey)
+ 
+  Verify a signed message with the senders public key.
+  <br>
+  @param   message   String   Signed message block (not encrypted)
+  @param   pubkey    String   Sender's public key
+  @return  object             Attributes:
+  									String verified
+  
+ENCRYPTION AND SIGNING
+
+encryptAndSignMessage(cleartext, pubkeys, privkey, pass)
+
+  Encrypts a given cleartext using an array of public keys, so 
+  multiple recipients are possible. Signs the message using the 
+  sender's private key.
+  <br>
+  @param    cleartext   String          Cleartext to encrypt
+  @param    pubkeys     Array<String>   Array of public key blocks
+  @param    privkey     String          Sender's private key block
+  @param    pass        String          Sender's password
+  @return   object                      Attributes: 
+  											String message
+  
+decryptAndVerifyMessage(message, privkey, pubkey, pass, senderspubkey)
+
+  Decrypt a message with the receiver's private key and public key.
+  Verfiy the signature using the sender's public key.
+  <br>
+  @param   message        String   Message block
+  @param   privkey        String   Receiver's private key block
+  @param   pubkey         String   Receiver's public key block
+  @param   pass           String   Receiver's password
+  @param   senderspubkey  String   Sender's public key block
+  @return  object                  Attributes: 
+  										String cleartext
+
+SYMMETRICAL ENCRYPTION
+
+symEncrypt(cleartext, password)
+
+  Symmetrically encrypt a given cleartext with a password.
+  <br>
+  @param  cleartext String 
+  @param  password  String
+  @return String
+
+symDecrypt(ciphertext, password)
+
+  Symmetrically decrypt a given ciphertext with a password.
+  <br>
+  @param   ciphertext  String
+  @param   password    String
+  @return  String
+  
+ADDITIONAL FUNCTIONS
+
+improvePassword(password)
+
+  Improve password creates a base64-string of mostly 64 characters 
+  to annoy crackers without costing too much cpu time.
+  <br>
+  @param   password  String     The hopefully not that bad password
+  @return  String
+
+
+hash(str, len)
+
+  Provide a really simple function to get a SHA3-Hash.
+  <br>
+  @param    str    String   Some string to hash
+  @param    len    Integer  (optional, default 512) 224, 256, 384 or 512
+  @return   String
+
+randomKeyString()
+
+  Create a long random key string (base64) for a really hard to crack
+  password.
+  <br>
+  @return String
+
+toBase64(utf8str)
+
+  Create a base64-encoded string from an utf8-String. 
+  <br>
+  @param utf8str String     A utf8-encoded string
+  @return String		
+
+toUtf8(base64str)
+
+  Create an utf8-encoded string from a base64-string.
+  <br>
+  @param base64str String   A base64-encoded string
+  @return String
+  
+------------------------------------------------------------------------
+cipherScript.ecc OBJECT BASED EASY USAGE OF ECC/ECDSA
+------------------------------------------------------------------------
+
+Note: Please still call window.cipherScript.init before using these 
+methods.
+All methods return null on error.
+
+/**
+ * Generates a keypair.
+ * <br>
+ * @param bits Integer   The number of bits (i.e. 192, 224, 384, 521 etc.)
+ * @return object        Attributes: priv, pub
+ * */
+generateKeypair(bits)
+
+/**
+ * Encrypt a given cleartextstring with the receivers' public keys.
+ * <br>
+ * @param  cleartext String           The cleartext to encrypt.
+ * @param  pubkeys   Array<String>    The public keys of the receivers
+ * @return object                     Attributes: ciphertext, enckeys (array:
+ * 										attributes: pubkey, cipherkey, keytag             
+ * */
+encryptString(cleartext, pubkeys)
+
+/**
+ * Encrypt a given cleartextstring with the receivers' public keys and
+ * sign it with your private key.
+ * <br>
+ * @param cleartext   String           The cleartext to encrypt
+ * @param pubkeys     Array<String>    The public keys of the receivers
+ * @param privkeystr  String           Your private key
+ * @return object                      Attributes: ciphertext, keytag, signature
+ * */
+encryptAndSignString(cleartext, pubkeys, privkeystr)
+
+/**
+ * Decrypt a given ciphertext string with your private key and the 
+ * sender's cipherkey and symkeytag.
+ * <br>
+ * @param ciphertext    String   The ciphertext to decrypt
+ * @param cipherkey     String   Key encrypted with your privkey
+ * @param keytag        String   The key tag
+ * @param privkeystr    String   Your private key string
+ * @return object                 Attributes: cleartext
+ * */
+decryptString(ciphertext, cipherkey, keytag, privkeystr)
+
+/**
+ * Decrypt a given ciphertext string with your private key and the 
+ * sender's cipherkey and keytag. Verify with the sender's public key. 
+ * <br>
+ * @param ciphertext    String   The ciphertext to decrypt
+ * @param cipherkey     String   Key encrypted with your privkey
+ * @param keytag        String   The key tag
+ * @param privkeystr    String   Your private key string
+ * @param pubkeystr     String   The senders public key
+ * @param signature     String   The signature of the message
+ * @return object                Attributes: cleartext, verified
+ * */
+decryptAndVerifyString(ciphertext, cipherkey, keytag, privkeystr, pubkeystr, signature)
+
+/**
+ * Signs a given string with a private key, returns a signature.
+ * <br>
+ * @param texttosign   String    Text to sign
+ * @param privkeystr   String    Private key string
+ * @return object                Attributes: message, signature
+ * 								 (with message being the original text,
+ * 								  added for convenience)
+ * */
+signString(texttosign, privkeystr)
+
+/**
+ * Verifies a text which came with a signature with the public key of
+ * the sender.
+ * <br>
+ * @param signedtext String Cleartext which came with a signature
+ * @param signature String Signature
+ * @param pubkeystr String Sender's public key
+ * @return object   Attributes: verified ("verified" on true, else
+ * 					"unverified")
+ * */
+ this.verifySignature(signedtext, signature, pubkeystr)

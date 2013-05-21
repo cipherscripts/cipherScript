@@ -1,0 +1,127 @@
+
+########################################################################
+------------------------------------------------------------------------
+cipherScript CRYPTO-SCHEME
+------------------------------------------------------------------------
+########################################################################
+
+------------------------------------------------------------------------
+SYMMETRIC ENCRYPTION/ DECRYPTION (NO BLOCKS HERE)
+------------------------------------------------------------------------
+
+A cleartext is encrypted with a given password, or a ciphertext is 
+decrypted with a given password. 
+
+AES256 is used as a CIPHER, as it is strong enough to ensure security,
+and yet performs well enough.
+
+All references to symmetrical encryption, i.e. phrases like "is 
+symmetrically encrypted/ decrypted" refer to the way of password 
+encryption/decryption as described above.
+
+------------------------------------------------------------------------
+KEY GENERATION
+------------------------------------------------------------------------
+
+A private and a public NISTECC-curve-based key (384 or 521 bit) are 
+generated, JSON-stringified and base64-encoded.
+The private key string is then symmetrically encrypted using a given
+password.
+
+Public and private key strings are formatted into public and private
+keyblocks.
+
+Public keyblocks are formatted as shown below:
+<pubkey>
+	<key>alongkeystringhere</key>
+</pubkey>
+
+Private keyblocks are formatted just like public key blocks:
+<privkey>
+	<key>encryptedkeystringhere</key>
+</privkey>
+To use a private key, the private key string found between the key-tags
+has to be symmetrically decrypted first.
+
+Both keyblocks can be transmitted over the network and saved anywhere, 
+as there is no way knowing the actual private key without symmetrically
+decrypting the private key string.
+
+------------------------------------------------------------------------
+ENCRYPTION/ DECRYPTION
+------------------------------------------------------------------------
+
+A cleartext can be encrypted using an array of public key blocks.
+
+First, a random (strong) symmetrical key is created. Then, this key is 
+encrypted using each of the public keys. Result is a keyheader like the
+one in the example below (2 recipients):
+		<keyheader>
+			<length>2</length>
+			<header id='0'>
+				<keyhash>SHA3/224 hash of the first pubkey, base64-enc</keyhash>
+				<ciphkey>encryptedsymkey</ciphkey>
+				<keytag>keytag</keytag>
+			</header>
+			<header id='1'>
+				<keyhash>SHA3/224 hash of the second pubkey, base64-enc</keyhash>
+				<ciphkey>encryptedsymkey</ciphkey>
+				<keytag>keytag</keytag>
+			</header>
+		</keyheader>
+
+After creating the keyheader, the cleartext is AES256-encrypted (simple
+AES-encryption with the random key as a password string, the random
+password should be strong enough) using the random key.
+
+All results are summed up in a message block.
+		<message>
+			<type>encrypted</type>
+			<keyheader>
+				...
+			</keyheader>
+			<text>
+				ciphertext
+			</text>
+		</message>
+
+Decryption happens just the other way round. The receiver's public key
+is SHA3/224 hashed (encoded as a base64-string), and compared to all the
+keyhashed in the keyheader. The cipherkey from this header then is 
+decrypted with the receiver's private key. The result can be used to
+AES-decrypt the ciphertext.
+
+------------------------------------------------------------------------
+SIGNING/ VERIFYING
+------------------------------------------------------------------------
+
+A hash of the cleartext is signed with the sender's private key. For 
+hashing, a hex-string-representation of a SHA512-hash is created,
+which then is SHA3/512 hashed, represented as a base64-encoded string.
+This should ensure the message cannot be guessed by hash.
+The result of a signing is a signature, which will be base64-encoded and
+appended in a message block.
+	<message>
+		<type>signed</type>
+		<text>cleartext</text>
+		<signature>signature</signature>
+	</message>
+
+The signature can be verified using the public key of the sender and 
+re-creating the hash-string as described above from the cleartext.
+
+------------------------------------------------------------------------
+SIGNING & ENCRYPTION / VERIFYING & DECRYPTION
+------------------------------------------------------------------------
+
+Signing and encryption happen as described above, as well do
+decryption and verification. To verify the signature, the cleartext has
+to be decrypted first, of course.
+
+Message blocks are formatted as shown below:
+	<message>
+		<type>signed,encrypted</type>
+		<keyheader>...</keyheader>
+		<text>ciphertext</text>
+		<signature>signaturehere</signature>
+	</message>
